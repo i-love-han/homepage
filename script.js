@@ -4,6 +4,8 @@ const CONFIG = {
     BRANCH: 'master'
 };
 
+const CACHE_BUSTER = Date.now();
+
 // ===== DOM Elements =====
 const navbar = document.querySelector('.navbar');
 const hamburger = document.querySelector('.hamburger');
@@ -30,19 +32,19 @@ const RAW_BASE_URL = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.
 const API_BASE_URL = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/contents`;
 
 async function fetchGitHubContent(path) {
-    const response = await fetch(`${RAW_BASE_URL}/${path}`);
+    const response = await fetch(`${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
     if (!response.ok) throw new Error(`Failed to fetch ${path}`);
     return await response.text();
 }
 
 async function fetchGitHubDir(path) {
-    const response = await fetch(`${API_BASE_URL}/${path}`);
+    const response = await fetch(`${API_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
     if (!response.ok) throw new Error(`Failed to fetch dir ${path}`);
     return await response.json();
 }
 
 function getRawImageUrl(path) {
-    return `${RAW_BASE_URL}/${path}`;
+    return `${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`;
 }
 
 // ===== Initialize =====
