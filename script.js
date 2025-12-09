@@ -27,46 +27,34 @@ let currentSlide = 0;
 const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
 
-// ===== GitHub API Helpers (Removed - using Manifest) =====
+// ===== GitHub API Helpers =====
 const RAW_BASE_URL = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}`;
-
-async function fetchManifest() {
-    try {
-        const response = await fetch(`image_manifest.json?t=${Date.now()}`);
-        if (!response.ok) throw new Error('Manifest load failed');
-        return await response.json();
-    } catch (error) {
-        console.error('Failed to load image manifest:', error);
-        return {};
-    }
-}
+const API_BASE_URL = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/contents`;
 
 async function fetchGitHubContent(path) {
-    const response = await fetch(`${RAW_BASE_URL}/${path}?t=${Date.now()}`);
+    const response = await fetch(`${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
     if (!response.ok) throw new Error(`Failed to fetch ${path}`);
     return await response.text();
 }
 
+async function fetchGitHubDir(path) {
+    const response = await fetch(`${API_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
+    if (!response.ok) throw new Error(`Failed to fetch dir ${path}`);
+    return await response.json();
+}
+
 function getRawImageUrl(path) {
-    if (path.startsWith('http')) return path;
-    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-    return `${RAW_BASE_URL}/${cleanPath}?t=${Date.now()}`;
+    return `${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`;
 }
 
 // ===== Initialize =====
-document.addEventListener('DOMContentLoaded', async () => {
-    const manifest = await fetchManifest();
-
+document.addEventListener('DOMContentLoaded', () => {
     loadContent();
-    loadPeopleImages(manifest);
-    checkAndShowPopup(manifest);
-    loadHeroBackground(manifest);
-    loadGalleryFromManifest(manifest);
-
-    const yearElem = document.getElementById('currentYear');
-    if (yearElem) {
-        yearElem.textContent = new Date().getFullYear();
-    }
+    loadPeopleImages();
+    loadGalleryFromGitHub();
+    checkAndShowPopup();
+    loadHeroBackground();
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
 });
 
 // ===== Load Content from GitHub =====
@@ -176,43 +164,47 @@ function applyContactLinks(data) {
 }
 
 // ===== Load People Images =====
-function loadPeopleImages(manifest) {
+async function loadPeopleImages() {
     const container = document.getElementById('aboutImageContainer');
     if (!container) return;
 
     try {
-        const images = manifest['people'] || [];
-        // Sort by filename asc
-        images.sort((a, b) => a.name.localeCompare(b.name));
+        const files = await fetchGitHubDir('images/people');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        if (images.length > 0) {
-            const imgPath = getRawImageUrl(images[0].path);
-            container.innerHTML = `<img src="${imgPath}" alt="${images[0].name}">`;
+        // Sort by filename asc
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (imageFiles.length > 0) {
+            const imgPath = getRawImageUrl(imageFiles[0].path);
+            container.innerHTML = `<img src="${imgPath}" alt="${imageFiles[0].name}">`;
             return;
         }
     } catch (error) {
         console.log('인물 이미지 로드 실패:', error);
     }
 
-    // Fallback
+    // Fallback if no images found or error occurred
     container.innerHTML = `<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop" alt="기본 프로필">`;
 }
 
 // ===== Popup Functions =====
-function checkAndShowPopup(manifest) {
+async function checkAndShowPopup() {
     const dontShowUntil = localStorage.getItem('popupDontShowUntil');
     if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
         return;
     }
 
     try {
-        const images = manifest['popup'] || [];
-        if (images.length === 0) return;
+        const files = await fetchGitHubDir('images/popup');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        images.sort((a, b) => a.name.localeCompare(b.name));
+        if (imageFiles.length === 0) return;
+
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
 
         const container = document.getElementById('popupImageContainer');
-        container.innerHTML = images.map(file =>
+        container.innerHTML = imageFiles.map(file =>
             `<img src="${getRawImageUrl(file.path)}" alt="${file.name}">`
         ).join('');
 
@@ -242,11 +234,13 @@ document.getElementById('popupModal').addEventListener('click', (e) => {
 });
 
 // ===== Hero Background =====
-function loadHeroBackground(manifest) {
+async function loadHeroBackground() {
     try {
-        const images = manifest['main'] || [];
-        if (images.length > 0) {
-            const bgPath = getRawImageUrl(images[0].path);
+        const files = await fetchGitHubDir('images/main');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+
+        if (imageFiles.length > 0) {
+            const bgPath = getRawImageUrl(imageFiles[0].path);
             const hero = document.querySelector('.hero');
             hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgPath}') center/cover no-repeat`;
         }
@@ -255,20 +249,21 @@ function loadHeroBackground(manifest) {
     }
 }
 
-// ===== Load Gallery from Manifest =====
+// ===== Load Gallery from GitHub =====
 function naturalSortKey(filename) {
     const match = filename.match(/\d+/);
     return match ? parseInt(match[0], 10) : 0;
 }
 
-function loadGalleryFromManifest(manifest) {
+async function loadGalleryFromGitHub() {
     try {
-        const images = manifest['gallery'] || [];
+        const files = await fetchGitHubDir('images/gallery');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
         // Sort descending by number in filename
-        images.sort((a, b) => naturalSortKey(b.name) - naturalSortKey(a.name));
+        imageFiles.sort((a, b) => naturalSortKey(b.name) - naturalSortKey(a.name));
 
-        const data = images.map(file => ({
+        const data = imageFiles.map(file => ({
             filename: file.name,
             path: getRawImageUrl(file.path)
         }));
