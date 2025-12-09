@@ -154,6 +154,9 @@ function applyContactLinks(data) {
 
 // ===== Load People Images =====
 async function loadPeopleImages() {
+    const container = document.getElementById('aboutImageContainer');
+    if (!container) return;
+
     try {
         const files = await fetchGitHubDir('images/people');
         const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
@@ -161,17 +164,17 @@ async function loadPeopleImages() {
         // Sort by filename asc
         imageFiles.sort((a, b) => a.name.localeCompare(b.name));
 
-        const container = document.getElementById('aboutImageContainer');
-
-        if (container && imageFiles.length > 0) {
+        if (imageFiles.length > 0) {
             const imgPath = getRawImageUrl(imageFiles[0].path);
             container.innerHTML = `<img src="${imgPath}" alt="${imageFiles[0].name}">`;
-        } else if (container) {
-            container.innerHTML = `<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop" alt="기본 프로필">`;
+            return;
         }
     } catch (error) {
         console.log('인물 이미지 로드 실패:', error);
     }
+
+    // Fallback if no images found or error occurred
+    container.innerHTML = `<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop" alt="기본 프로필">`;
 }
 
 // ===== Popup Functions =====
