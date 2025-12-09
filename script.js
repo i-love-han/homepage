@@ -19,24 +19,50 @@ let currentSlide = 0;
 const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
 
-// ===== Initialize =====
+// ===== GitHub API Helpers =====
+const RAW_BASE_URL = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}`;
+const API_BASE_URL = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/contents`;
+
+async function fetchGitHubContent(path) {
+    const response = await fetch(`${RAW_BASE_URL}/${path}`);
+    if (!response.ok) throw new Error(`Failed to fetch ${path}`);
+    return await response.text();
+}
+
+async function fetchGitHubDir(path) {
+    const response = await fetch(`${API_BASE_URL}/${path}`);
+    if (!response.ok) throw new Error(`Failed to fetch dir ${path}`);
+    return await response.json();
+}
+
+function getRawImageUrl(path) {
+    return `${RAW_BASE_URL}/${path}`;
+}
+
 // ===== Initialize =====
 document.addEventListener('DOMContentLoaded', () => {
     loadContent();
     loadPeopleImages();
-    loadGalleryFromJSON();
+    loadGalleryFromGitHub();
     checkAndShowPopup();
     loadHeroBackground();
     document.getElementById('currentYear').textContent = new Date().getFullYear();
 });
 
-// ===== Load Content from API =====
+// ===== Load Content from GitHub =====
 async function loadContent() {
     try {
-        const response = await fetch('/api/content');
-        if (!response.ok) return;
+        const text = await fetchGitHubContent('content.txt');
+        const lines = text.split('\n');
+        const data = {};
 
-        const data = await response.json();
+        lines.forEach(line => {
+            if (line.includes('=')) {
+                const [key, ...valueParts] = line.split('=');
+                const value = valueParts.join('=').trim().replace(/\\n/g, '\n');
+                data[key.trim()] = value;
+            }
+        });
 
         // Header
         setText('headerTitle', data['헤더 제목']);
@@ -79,8 +105,7 @@ async function loadContent() {
 function setText(id, text) {
     const element = document.getElementById(id);
     if (element && text) {
-        element.textContent = text; // innerText uses style-aware formatting, textContent is raw
-        // Handle newlines for specific elements if needed
+        element.textContent = text;
         if (id === 'aboutContent' || id === 'mainTagline') {
             element.innerHTML = text.replace(/\n/g, '<br>');
         }
@@ -130,22 +155,18 @@ function applyContactLinks(data) {
 // ===== Load People Images =====
 async function loadPeopleImages() {
     try {
-        const response = await fetch('/api/people');
-        if (!response.ok) return;
+        const files = await fetchGitHubDir('images/people');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        const images = await response.json();
+        // Sort by filename asc
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+
         const container = document.getElementById('aboutImageContainer');
 
-        if (container && images.length > 0) {
-            // Use the first image for profile
-            const img = images[0];
-            container.innerHTML = `<img src="${img.path}" alt="${img.filename}">`;
+        if (container && imageFiles.length > 0) {
+            const imgPath = getRawImageUrl(imageFiles[0].path);
+            container.innerHTML = `<img src="${imgPath}" alt="${imageFiles[0].name}">`;
         } else if (container) {
-            // Keep default if no images found? Or clear?
-            // Since we removed default in HTML, we should show nothing or placeholder.
-            // If nothing, maybe placeholder?
-            // HTML modification removed the img tag. 
-            // If no image, maybe show placeholder
             container.innerHTML = `<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop" alt="기본 프로필">`;
         }
     } catch (error) {
@@ -155,26 +176,24 @@ async function loadPeopleImages() {
 
 // ===== Popup Functions =====
 async function checkAndShowPopup() {
-    // 일주일동안 열지 않기 체크 확인
     const dontShowUntil = localStorage.getItem('popupDontShowUntil');
     if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
-        return; // 아직 기간이 안 지남
+        return;
     }
 
     try {
-        const response = await fetch('/api/popup');
-        if (!response.ok) return;
+        const files = await fetchGitHubDir('images/popup');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        const popups = await response.json();
-        if (popups.length === 0) return; // 팝업 이미지 없음
+        if (imageFiles.length === 0) return;
 
-        // 팝업 이미지 표시
+        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+
         const container = document.getElementById('popupImageContainer');
-        container.innerHTML = popups.map(p =>
-            `<img src="${p.path}" alt="${p.filename}">`
+        container.innerHTML = imageFiles.map(file =>
+            `<img src="${getRawImageUrl(file.path)}" alt="${file.name}">`
         ).join('');
 
-        // 팝업 모달 표시
         document.getElementById('popupModal').classList.add('active');
         document.body.style.overflow = 'hidden';
     } catch (error) {
@@ -186,7 +205,6 @@ function closePopup() {
     const dontShow = document.getElementById('popupDontShow').checked;
 
     if (dontShow) {
-        // 일주일(7일) 후 시간 저장
         const oneWeek = 7 * 24 * 60 * 60 * 1000;
         localStorage.setItem('popupDontShowUntil', new Date().getTime() + oneWeek);
     }
@@ -195,7 +213,6 @@ function closePopup() {
     document.body.style.overflow = '';
 }
 
-// 팝업 닫기 이벤트
 document.getElementById('popupClose').addEventListener('click', closePopup);
 document.getElementById('popupCloseBtn').addEventListener('click', closePopup);
 document.getElementById('popupModal').addEventListener('click', (e) => {
@@ -205,34 +222,42 @@ document.getElementById('popupModal').addEventListener('click', (e) => {
 // ===== Hero Background =====
 async function loadHeroBackground() {
     try {
-        const response = await fetch('/api/background');
-        if (!response.ok) return;
+        const files = await fetchGitHubDir('images/main');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        const data = await response.json();
-        if (data.path) {
+        if (imageFiles.length > 0) {
+            const bgPath = getRawImageUrl(imageFiles[0].path);
             const hero = document.querySelector('.hero');
-            hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${data.path}') center/cover no-repeat`;
+            hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgPath}') center/cover no-repeat`;
         }
     } catch (error) {
         console.log('배경 로드 실패:', error);
     }
 }
 
-// ===== Load Gallery from API =====
-async function loadGalleryFromJSON() {
+// ===== Load Gallery from GitHub =====
+function naturalSortKey(filename) {
+    const match = filename.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+}
+
+async function loadGalleryFromGitHub() {
     try {
-        const response = await fetch('/api/images');
-        if (!response.ok) throw new Error('API not available');
+        const files = await fetchGitHubDir('images/gallery');
+        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
 
-        const data = await response.json();
+        // Sort descending by number in filename
+        imageFiles.sort((a, b) => naturalSortKey(b.name) - naturalSortKey(a.name));
 
-        // data.json의 이미지가 이미 최신순으로 정렬되어 있음
+        const data = imageFiles.map(file => ({
+            filename: file.name,
+            path: getRawImageUrl(file.path)
+        }));
+
         galleryImages = data.map(img => img.path);
-
         renderGallery(data);
     } catch (error) {
-        console.log('data.json 로드 실패, 기본 이미지 사용:', error);
-        // Fallback to default images if data.json doesn't exist
+        console.log('갤러리 로드 실패, 기본 이미지 사용:', error);
         galleryImages = [
             'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop',
             'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&h=800&fit=crop',
@@ -245,14 +270,13 @@ async function loadGalleryFromJSON() {
     }
 }
 
-// ===== Render Gallery from data.json =====
+// ===== Render Gallery =====
 function renderGallery(data) {
     if (data.length === 0) {
         galleryGrid.innerHTML = '<p class="gallery-empty">아직 등록된 사진이 없습니다.</p>';
         return;
     }
 
-    // Group items into pages of 6
     const pages = [];
     for (let i = 0; i < data.length; i += ITEMS_PER_PAGE) {
         pages.push(data.slice(i, i + ITEMS_PER_PAGE));
@@ -276,9 +300,7 @@ function renderGallery(data) {
     observeFadeIn();
 }
 
-// ===== Render Fallback Gallery =====
 function renderGalleryFallback() {
-    // Group items into pages of 6
     const pages = [];
     for (let i = 0; i < galleryImages.length; i += ITEMS_PER_PAGE) {
         pages.push(galleryImages.slice(i, i + ITEMS_PER_PAGE));
@@ -307,14 +329,12 @@ function initGallerySlider(totalImages) {
     totalSlides = Math.ceil(totalImages / ITEMS_PER_PAGE);
     currentSlide = 0;
 
-    // Create dots
     const dotsContainer = document.getElementById('galleryDots');
     if (dotsContainer && totalSlides > 1) {
         dotsContainer.innerHTML = Array.from({ length: totalSlides }, (_, i) =>
             `<span class="gallery-dot ${i === 0 ? 'active' : ''}" data-slide="${i}"></span>`
         ).join('');
 
-        // Add click events to dots
         dotsContainer.querySelectorAll('.gallery-dot').forEach(dot => {
             dot.addEventListener('click', () => {
                 goToSlide(parseInt(dot.dataset.slide));
@@ -322,18 +342,23 @@ function initGallerySlider(totalImages) {
         });
     }
 
-    // Setup navigation buttons
     const prevBtn = document.getElementById('galleryPrev');
     const nextBtn = document.getElementById('galleryNext');
 
     if (prevBtn && nextBtn) {
-        prevBtn.addEventListener('click', () => {
+        // Remove old event listeners by cloning (simple trick)
+        const newPrev = prevBtn.cloneNode(true);
+        const newNext = nextBtn.cloneNode(true);
+        prevBtn.parentNode.replaceChild(newPrev, prevBtn);
+        nextBtn.parentNode.replaceChild(newNext, nextBtn);
+
+        newPrev.addEventListener('click', () => {
             if (currentSlide > 0) {
                 goToSlide(currentSlide - 1);
             }
         });
 
-        nextBtn.addEventListener('click', () => {
+        newNext.addEventListener('click', () => {
             if (currentSlide < totalSlides - 1) {
                 goToSlide(currentSlide + 1);
             }
@@ -349,21 +374,18 @@ function goToSlide(slideIndex) {
 }
 
 function updateSlider() {
-    // Get viewport width for slide calculation
     const viewport = document.querySelector('.gallery-viewport');
     const viewportWidth = viewport?.offsetWidth || 0;
-    const gap = 20;
+    const gap = 20; // Needs to match CSS
     const offset = currentSlide * (viewportWidth + gap);
 
     galleryGrid.style.transform = `translateX(-${offset}px)`;
 
-    // Update dots
     const dots = document.querySelectorAll('.gallery-dot');
     dots.forEach((dot, index) => {
         dot.classList.toggle('active', index === currentSlide);
     });
 
-    // Update button states
     const prevBtn = document.getElementById('galleryPrev');
     const nextBtn = document.getElementById('galleryNext');
 
@@ -396,7 +418,6 @@ hamburger.addEventListener('click', () => {
     navMenu.classList.toggle('active');
 });
 
-// Close menu when clicking a link
 navLinks.forEach(link => {
     link.addEventListener('click', () => {
         hamburger.classList.remove('active');
@@ -427,22 +448,18 @@ function showNextImage() {
     lightboxImg.src = galleryImages[currentImageIndex];
 }
 
-// Lightbox Controls
 lightboxClose.addEventListener('click', closeLightbox);
 lightboxPrev.addEventListener('click', showPrevImage);
 lightboxNext.addEventListener('click', showNextImage);
 
-// Close lightbox on background click
 lightbox.addEventListener('click', (e) => {
     if (e.target === lightbox) {
         closeLightbox();
     }
 });
 
-// Keyboard Navigation
 document.addEventListener('keydown', (e) => {
     if (!lightbox.classList.contains('active')) return;
-
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') showPrevImage();
     if (e.key === 'ArrowRight') showNextImage();
@@ -451,12 +468,10 @@ document.addEventListener('keydown', (e) => {
 // ===== Scroll Animation =====
 function observeFadeIn() {
     const fadeElements = document.querySelectorAll('.section-title, .about-content, .gallery-item, .contact-item');
-
     const observerOptions = {
         threshold: 0.1,
         rootMargin: '0px 0px -50px 0px'
     };
-
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -471,7 +486,6 @@ function observeFadeIn() {
     });
 }
 
-// Initial fade-in for non-gallery elements
 observeFadeIn();
 
 // ===== Smooth Scroll for Anchor Links =====
@@ -490,13 +504,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 // ===== Active Nav Link on Scroll =====
 const sections = document.querySelectorAll('section');
-
 window.addEventListener('scroll', () => {
     let current = '';
-
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
         if (window.scrollY >= sectionTop - 200) {
             current = section.getAttribute('id');
         }
