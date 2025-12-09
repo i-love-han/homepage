@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="윤형삼 - 공식 홍보 페이지">
+    <title>윤형삼 | Yun Hyeongsam</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo" id="headerTitle"></a>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">홈</a></li>
+                <li><a href="#about" class="nav-link">소개</a></li>
+                <li><a href="#gallery" class="nav-link">갤러리</a></li>
+                <li><a href="#contact" class="nav-link">연락처</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 class="hero-title" id="mainTitle"></h1>
+            <p class="hero-subtitle" id="mainContent"></p>
+            <p class="hero-tagline" id="mainTagline"></p>
+            <a href="#about" class="hero-btn">더 알아보기</a>
+        </div>
+        <div class="scroll-indicator">
+            <div class="mouse">
+                <div class="wheel"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <h2 class="section-title">소개</h2>
+            <div class="about-content">
+                <div class="about-image" id="aboutImageContainer">
+                    <!-- 이미지가 동적으로 로드됩니다 -->
+                </div>
+                <div class="about-text">
+                    <h3 id="aboutTitle"></h3>
+                    <p id="aboutContent">
+                    </p>
+                    <div class="about-stats">
+                        <div class="stat-item">
+                            <span class="stat-number">∞</span>
+                            <span class="stat-label">열정</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">최선</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">24/7</span>
+                            <span class="stat-label">노력</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="gallery">
+        <div class="container">
+            <h2 class="section-title" id="galleryTitle">갤러리</h2>
+            <p class="section-subtitle">소중한 순간들을 담은 사진들</p>
+            <div class="gallery-slider">
+                <button class="gallery-nav gallery-prev" id="galleryPrev">&#10094;</button>
+                <div class="gallery-viewport">
+                    <div class="gallery-grid" id="galleryGrid">
+                        <!-- 이미지가 data.json에서 동적으로 로드됩니다 -->
+                        <p class="gallery-loading">갤러리 로딩 중...</p>
+                    </div>
+                </div>
+                <button class="gallery-nav gallery-next" id="galleryNext">&#10095;</button>
+            </div>
+            <div class="gallery-dots" id="galleryDots"></div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2 class="section-title">연락처</h2>
+            <p class="section-subtitle" id="contactTitle"></p>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <div class="contact-icon">📧</div>
+                        <div class="contact-details">
+                            <h4>이메일</h4>
+                            <p id="contactEmail"></p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📱</div>
+                        <div class="contact-details">
+                            <h4>전화</h4>
+                            <p id="contactPhone"></p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">📍</div>
+                        <div class="contact-details">
+                            <h4>위치</h4>
+                            <p id="contactLocation"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="social-links">
+                    <a href="https://www.facebook.com/yunhyeongsam.2025" target="_blank" class="social-link facebook">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+                        </svg>
+                        Facebook
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; <span id="currentYear"></span> <span id="footerText"></span></p>
+        </div>
+    </footer>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <button class="lightbox-close">&times;</button>
+        <button class="lightbox-prev">&#10094;</button>
+        <button class="lightbox-next">&#10095;</button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="Lightbox Image">
+        </div>
+    </div>
+
+    <!-- Popup Modal -->
+    <div id="popupModal" class="popup-modal">
+        <div class="popup-content">
+            <button class="popup-close" id="popupClose">&times;</button>
+            <div class="popup-image-container" id="popupImageContainer">
+                <!-- 팝업 이미지가 여기에 표시됩니다 -->
+            </div>
+            <div class="popup-footer">
+                <label class="popup-checkbox">
+                    <input type="checkbox" id="popupDontShow">
+                    <span>일주일동안 열지 않기</span>
+                </label>
+                <button class="popup-close-btn" id="popupCloseBtn">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
