@@ -1,0 +1,68 @@
+{
+  "gallery": [
+    {
+      "name": "1.jpg",
+      "path": "images/gallery/1.jpg"
+    },
+    {
+      "name": "10.jpg",
+      "path": "images/gallery/10.jpg"
+    },
+    {
+      "name": "11.jpg",
+      "path": "images/gallery/11.jpg"
+    },
+    {
+      "name": "12.png",
+      "path": "images/gallery/12.png"
+    },
+    {
+      "name": "13.png",
+      "path": "images/gallery/13.png"
+    },
+    {
+      "name": "2.jpg",
+      "path": "images/gallery/2.jpg"
+    },
+    {
+      "name": "3.jpg",
+      "path": "images/gallery/3.jpg"
+    },
+    {
+      "name": "4.jpg",
+      "path": "images/gallery/4.jpg"
+    },
+    {
+      "name": "5.jpg",
+      "path": "images/gallery/5.jpg"
+    },
+    {
+      "name": "6.jpg",
+      "path": "images/gallery/6.jpg"
+    },
+    {
+      "name": "7.jpg",
+      "path": "images/gallery/7.jpg"
+    },
+    {
+      "name": "8.jpg",
+      "path": "images/gallery/8.jpg"
+    },
+    {
+      "name": "9.jpg",
+      "path": "images/gallery/9.jpg"
+    }
+  ],
+  "main": [
+    {
+      "name": "1.png",
+      "path": "images/main/1.png"
+    }
+  ],
+  "people": [
+    {
+      "name": "1..png",
+      "path": "images/people/1..png"
+    }
+  ]
+}
