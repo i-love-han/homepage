@@ -1,3 +1,9 @@
+const CONFIG = {
+    USER: 'i-love-han',
+    REPO: 'homepage',
+    BRANCH: 'master'
+};
+
 // ===== DOM Elements =====
 const navbar = document.querySelector('.navbar');
 const hamburger = document.querySelector('.hamburger');
@@ -65,6 +71,9 @@ async function loadContent() {
         });
 
         // Header
+        if (data['브라우저 타이틀']) {
+            document.title = data['브라우저 타이틀'];
+        }
         setText('headerTitle', data['헤더 제목']);
 
         // Main
