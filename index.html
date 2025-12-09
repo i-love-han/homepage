@@ -143,6 +143,13 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
+            <p id="footerText"></p>
+        </div>
+    </footer>
+
+    <!-- Popup Modal -->
+    <div id="popupModal" class="popup-modal">
+        <div class="popup-content">
             <button class="popup-close" id="popupClose">&times;</button>
             <div class="popup-image-container" id="popupImageContainer">
                 <!-- 팝업 이미지가 여기에 표시됩니다 -->
@@ -155,9 +162,18 @@
                 <button class="popup-close-btn" id="popupCloseBtn">닫기</button>
             </div>
         </div>
-        </div>
+    </div>
 
-        <script src="script.js"></script>
+    <div id="lightbox" class="lightbox">
+        <button class="lightbox-close">&times;</button>
+        <button class="lightbox-prev">&#10094;</button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="확대 이미지">
+        </div>
+        <button class="lightbox-next">&#10095;</button>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 
 </html>
