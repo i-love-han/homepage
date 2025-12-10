@@ -1,10 +1,13 @@
-const CONFIG = {
-    USER: 'i-love-han',
-    REPO: 'homepage',
-    BRANCH: 'master'
-};
-
 const CACHE_BUSTER = Date.now();
+const NO_IMAGE_PATH = 'images/no-image.svg';
+
+// ===== 이미지 파일 목록 (상대 경로 사용) =====
+const IMAGE_FILES = {
+    gallery: ['12.png', '11.jpg', '10.jpg', '9.jpg', '8.jpg', '7.jpg', '6.jpg', '5.jpg', '4.jpg', '3.jpg', '2.jpg', '1.jpg'],
+    people: ['1..png'],
+    main: ['1.png'],
+    popup: []
+};
 
 // ===== DOM Elements =====
 const navbar = document.querySelector('.navbar');
@@ -27,40 +30,32 @@ let currentSlide = 0;
 const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
 
-// ===== GitHub API Helpers =====
-const RAW_BASE_URL = `https://raw.githubusercontent.com/${CONFIG.USER}/${CONFIG.REPO}/${CONFIG.BRANCH}`;
-const API_BASE_URL = `https://api.github.com/repos/${CONFIG.USER}/${CONFIG.REPO}/contents`;
-
-async function fetchGitHubContent(path) {
-    const response = await fetch(`${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
+// ===== Content Fetch Helper =====
+async function fetchContent(path) {
+    const response = await fetch(`${path}?t=${CACHE_BUSTER}`);
     if (!response.ok) throw new Error(`Failed to fetch ${path}`);
     return await response.text();
 }
 
-async function fetchGitHubDir(path) {
-    const response = await fetch(`${API_BASE_URL}/${path}?t=${CACHE_BUSTER}`);
-    if (!response.ok) throw new Error(`Failed to fetch dir ${path}`);
-    return await response.json();
-}
-
-function getRawImageUrl(path) {
-    return `${RAW_BASE_URL}/${path}?t=${CACHE_BUSTER}`;
+function getImagePath(folder, filename) {
+    return `images/${folder}/${filename}?t=${CACHE_BUSTER}`;
 }
 
 // ===== Initialize =====
 document.addEventListener('DOMContentLoaded', () => {
     loadContent();
     loadPeopleImages();
-    loadGalleryFromGitHub();
+    loadGallery();
     checkAndShowPopup();
     loadHeroBackground();
-    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    const yearElem = document.getElementById('currentYear');
+    if (yearElem) yearElem.textContent = new Date().getFullYear();
 });
 
-// ===== Load Content from GitHub =====
+// ===== Load Content =====
 async function loadContent() {
     try {
-        const text = await fetchGitHubContent('content.txt');
+        const text = await fetchContent('content.txt');
         const lines = text.split('\n');
         const data = {};
 
@@ -164,55 +159,36 @@ function applyContactLinks(data) {
 }
 
 // ===== Load People Images =====
-async function loadPeopleImages() {
+function loadPeopleImages() {
     const container = document.getElementById('aboutImageContainer');
     if (!container) return;
 
-    try {
-        const files = await fetchGitHubDir('images/people');
-        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-
-        // Sort by filename asc
-        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
-
-        if (imageFiles.length > 0) {
-            const imgPath = getRawImageUrl(imageFiles[0].path);
-            container.innerHTML = `<img src="${imgPath}" alt="${imageFiles[0].name}">`;
-            return;
-        }
-    } catch (error) {
-        console.log('인물 이미지 로드 실패:', error);
+    const files = IMAGE_FILES.people;
+    if (files.length > 0) {
+        const imgPath = getImagePath('people', files[0]);
+        container.innerHTML = `<img src="${imgPath}" alt="${files[0]}">`;
+    } else {
+        container.innerHTML = `<img src="${NO_IMAGE_PATH}" alt="이미지 없음">`;
     }
-
-    // Fallback if no images found or error occurred
-    container.innerHTML = `<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=500&fit=crop" alt="기본 프로필">`;
 }
 
 // ===== Popup Functions =====
-async function checkAndShowPopup() {
+function checkAndShowPopup() {
     const dontShowUntil = localStorage.getItem('popupDontShowUntil');
     if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
         return;
     }
 
-    try {
-        const files = await fetchGitHubDir('images/popup');
-        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
+    const files = IMAGE_FILES.popup;
+    if (files.length === 0) return;
 
-        if (imageFiles.length === 0) return;
+    const container = document.getElementById('popupImageContainer');
+    container.innerHTML = files.map(file =>
+        `<img src="${getImagePath('popup', file)}" alt="${file}">`
+    ).join('');
 
-        imageFiles.sort((a, b) => a.name.localeCompare(b.name));
-
-        const container = document.getElementById('popupImageContainer');
-        container.innerHTML = imageFiles.map(file =>
-            `<img src="${getRawImageUrl(file.path)}" alt="${file.name}">`
-        ).join('');
-
-        document.getElementById('popupModal').classList.add('active');
-        document.body.style.overflow = 'hidden';
-    } catch (error) {
-        console.log('팝업 로드 실패:', error);
-    }
+    document.getElementById('popupModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
 function closePopup() {
@@ -234,54 +210,33 @@ document.getElementById('popupModal').addEventListener('click', (e) => {
 });
 
 // ===== Hero Background =====
-async function loadHeroBackground() {
-    try {
-        const files = await fetchGitHubDir('images/main');
-        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-
-        if (imageFiles.length > 0) {
-            const bgPath = getRawImageUrl(imageFiles[0].path);
-            const hero = document.querySelector('.hero');
+function loadHeroBackground() {
+    const files = IMAGE_FILES.main;
+    if (files.length > 0) {
+        const bgPath = getImagePath('main', files[0]);
+        const hero = document.querySelector('.hero');
+        if (hero) {
             hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgPath}') center/cover no-repeat`;
         }
-    } catch (error) {
-        console.log('배경 로드 실패:', error);
     }
 }
 
-// ===== Load Gallery from GitHub =====
-function naturalSortKey(filename) {
-    const match = filename.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
-}
+// ===== Load Gallery =====
+function loadGallery() {
+    const files = IMAGE_FILES.gallery;
 
-async function loadGalleryFromGitHub() {
-    try {
-        const files = await fetchGitHubDir('images/gallery');
-        const imageFiles = files.filter(file => file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i));
-
-        // Sort descending by number in filename
-        imageFiles.sort((a, b) => naturalSortKey(b.name) - naturalSortKey(a.name));
-
-        const data = imageFiles.map(file => ({
-            filename: file.name,
-            path: getRawImageUrl(file.path)
-        }));
-
-        galleryImages = data.map(img => img.path);
-        renderGallery(data);
-    } catch (error) {
-        console.log('갤러리 로드 실패, 기본 이미지 사용:', error);
-        galleryImages = [
-            'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop',
-            'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&h=800&fit=crop',
-            'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=800&fit=crop',
-            'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&h=800&fit=crop',
-            'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=800&h=800&fit=crop',
-            'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&h=800&fit=crop'
-        ];
-        renderGalleryFallback();
+    if (files.length === 0) {
+        galleryGrid.innerHTML = '<p class="gallery-empty">아직 등록된 사진이 없습니다.</p>';
+        return;
     }
+
+    const data = files.map(filename => ({
+        filename: filename,
+        path: getImagePath('gallery', filename)
+    }));
+
+    galleryImages = data.map(img => img.path);
+    renderGallery(data);
 }
 
 // ===== Render Gallery =====
@@ -311,30 +266,6 @@ function renderGallery(data) {
 
     attachGalleryEvents();
     initGallerySlider(data.length);
-    observeFadeIn();
-}
-
-function renderGalleryFallback() {
-    const pages = [];
-    for (let i = 0; i < galleryImages.length; i += ITEMS_PER_PAGE) {
-        pages.push(galleryImages.slice(i, i + ITEMS_PER_PAGE));
-    }
-
-    galleryGrid.innerHTML = pages.map((page, pageIndex) => `
-        <div class="gallery-page">
-            ${page.map((src, index) => `
-                <div class="gallery-item fade-in" data-index="${pageIndex * ITEMS_PER_PAGE + index}">
-                    <img src="${src}" alt="갤러리 이미지 ${pageIndex * ITEMS_PER_PAGE + index + 1}" loading="lazy">
-                    <div class="gallery-overlay">
-                        <span class="gallery-icon">🔍</span>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `).join('');
-
-    attachGalleryEvents();
-    initGallerySlider(galleryImages.length);
     observeFadeIn();
 }
 
