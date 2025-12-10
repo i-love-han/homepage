@@ -1,13 +1,12 @@
 const CACHE_BUSTER = Date.now();
 const NO_IMAGE_PATH = 'images/no-image.svg';
 
-// ===== 이미지 파일 목록 (상대 경로 사용) =====
-const IMAGE_FILES = {
-    gallery: ['12.png', '11.jpg', '10.jpg', '9.jpg', '8.jpg', '7.jpg', '6.jpg', '5.jpg', '4.jpg', '3.jpg', '2.jpg', '1.jpg'],
-    people: ['1..png'],
-    main: ['1.png'],
-    popup: []
-};
+// ===== GitHub 설정 =====
+const GITHUB_USER = 'i-love-han';
+const GITHUB_REPO = 'homepage';
+const GITHUB_BRANCH = 'master';
+const GITHUB_API = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
+const GITHUB_RAW = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${GITHUB_BRANCH}`;
 
 // ===== DOM Elements =====
 const navbar = document.querySelector('.navbar');
@@ -31,19 +30,28 @@ const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
 let galleryScrollTime = 3000; // default 3 seconds
 
-// ===== Content Fetch Helper =====
+// ===== Fetch Helpers =====
 async function fetchContent(path) {
     const response = await fetch(`${path}?t=${CACHE_BUSTER}`);
     if (!response.ok) throw new Error(`Failed to fetch ${path}`);
     return await response.text();
 }
 
-function getImagePath(folder, filename) {
-    return `images/${folder}/${filename}?t=${CACHE_BUSTER}`;
+async function fetchGitHubDir(folder) {
+    const response = await fetch(`${GITHUB_API}/images/${folder}`);
+    if (!response.ok) throw new Error(`Failed to fetch ${folder}`);
+    const files = await response.json();
+    return files
+        .filter(f => f.type === 'file' && /\.(jpg|jpeg|png|gif|webp)$/i.test(f.name))
+        .map(f => f.name);
+}
+
+function getImageUrl(folder, filename) {
+    return `${GITHUB_RAW}/images/${folder}/${filename}?t=${CACHE_BUSTER}`;
 }
 
 // ===== Initialize =====
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     loadContent();
     loadPeopleImages();
     loadGallery();
@@ -172,36 +180,47 @@ function applyContactLinks(data) {
 }
 
 // ===== Load People Images =====
-function loadPeopleImages() {
+async function loadPeopleImages() {
     const container = document.getElementById('aboutImageContainer');
     if (!container) return;
 
-    const files = IMAGE_FILES.people;
-    if (files.length > 0) {
-        const imgPath = getImagePath('people', files[0]);
-        container.innerHTML = `<img src="${imgPath}" alt="${files[0]}">`;
-    } else {
+    try {
+        const files = await fetchGitHubDir('people');
+        if (files.length > 0) {
+            files.sort();
+            const imgPath = getImageUrl('people', files[0]);
+            container.innerHTML = `<img src="${imgPath}" alt="${files[0]}">`;
+        } else {
+            container.innerHTML = `<img src="${NO_IMAGE_PATH}" alt="이미지 없음">`;
+        }
+    } catch (error) {
+        console.log('인물 이미지 로드 실패:', error);
         container.innerHTML = `<img src="${NO_IMAGE_PATH}" alt="이미지 없음">`;
     }
 }
 
 // ===== Popup Functions =====
-function checkAndShowPopup() {
+async function checkAndShowPopup() {
     const dontShowUntil = localStorage.getItem('popupDontShowUntil');
     if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
         return;
     }
 
-    const files = IMAGE_FILES.popup;
-    if (files.length === 0) return;
+    try {
+        const files = await fetchGitHubDir('popup');
+        if (files.length === 0) return;
 
-    const container = document.getElementById('popupImageContainer');
-    container.innerHTML = files.map(file =>
-        `<img src="${getImagePath('popup', file)}" alt="${file}">`
-    ).join('');
+        files.sort();
+        const container = document.getElementById('popupImageContainer');
+        container.innerHTML = files.map(file =>
+            `<img src="${getImageUrl('popup', file)}" alt="${file}">`
+        ).join('');
 
-    document.getElementById('popupModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
+        document.getElementById('popupModal').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    } catch (error) {
+        console.log('팝업 로드 실패:', error);
+    }
 }
 
 function closePopup() {
@@ -223,33 +242,50 @@ document.getElementById('popupModal').addEventListener('click', (e) => {
 });
 
 // ===== Hero Background =====
-function loadHeroBackground() {
-    const files = IMAGE_FILES.main;
-    if (files.length > 0) {
-        const bgPath = getImagePath('main', files[0]);
-        const hero = document.querySelector('.hero');
-        if (hero) {
-            hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgPath}') center/cover no-repeat`;
+async function loadHeroBackground() {
+    try {
+        const files = await fetchGitHubDir('main');
+        if (files.length > 0) {
+            const bgPath = getImageUrl('main', files[0]);
+            const hero = document.querySelector('.hero');
+            if (hero) {
+                hero.style.background = `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('${bgPath}') center/cover no-repeat`;
+            }
         }
+    } catch (error) {
+        console.log('배경 로드 실패:', error);
     }
 }
 
 // ===== Load Gallery =====
-function loadGallery() {
-    const files = IMAGE_FILES.gallery;
+function naturalSortKey(filename) {
+    const match = filename.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+}
 
-    if (files.length === 0) {
-        galleryGrid.innerHTML = '<p class="gallery-empty">아직 등록된 사진이 없습니다.</p>';
-        return;
+async function loadGallery() {
+    try {
+        const files = await fetchGitHubDir('gallery');
+
+        if (files.length === 0) {
+            galleryGrid.innerHTML = '<p class="gallery-empty">아직 등록된 사진이 없습니다.</p>';
+            return;
+        }
+
+        // Sort descending by number in filename
+        files.sort((a, b) => naturalSortKey(b) - naturalSortKey(a));
+
+        const data = files.map(filename => ({
+            filename: filename,
+            path: getImageUrl('gallery', filename)
+        }));
+
+        galleryImages = data.map(img => img.path);
+        renderGallery(data);
+    } catch (error) {
+        console.log('갤러리 로드 실패:', error);
+        galleryGrid.innerHTML = '<p class="gallery-empty">갤러리를 로드할 수 없습니다.</p>';
     }
-
-    const data = files.map(filename => ({
-        filename: filename,
-        path: getImagePath('gallery', filename)
-    }));
-
-    galleryImages = data.map(img => img.path);
-    renderGallery(data);
 }
 
 // ===== Render Gallery =====
