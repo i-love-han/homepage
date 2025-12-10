@@ -21,7 +21,7 @@ jobs:
           
           # Gallery
           echo -n '  "gallery": [' >> images.json
-          files=$(ls -1 images/gallery/*.{jpg,jpeg,png,gif,webp} 2>/dev/null | xargs -I {} basename {} | sort -t. -k1 -rn | tr '\n' ',' | sed 's/,$//')
+          files=$(ls -1 images/gallery/*.{jpg,jpeg,png,gif,webp,mp4,webm} 2>/dev/null | xargs -I {} basename {} | sort -t. -k1 -rn | tr '\n' ',' | sed 's/,$//')
           echo "$files" | sed 's/\([^,]*\)/"\1"/g' >> images.json
           echo '],' >> images.json
           

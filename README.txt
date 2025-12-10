@@ -23,7 +23,8 @@ images/
 [갤러리 이미지]
 - 위치: images/gallery/
 - 파일명에 숫자가 있으면 숫자 기준 내림차순 정렬
-  예: 12.jpg → 11.jpg → 10.jpg → ... → 1.jpg
+  예: 13.mp4 → 12.jpg → 11.jpg → ... → 1.jpg
+- 이미지(.jpg, .png 등)와 동영상(.mp4, .webm) 지원
 - 6개씩 한 페이지로 슬라이드됨
 - 자동 슬라이드 시간은 content.txt에서 조절 가능
 

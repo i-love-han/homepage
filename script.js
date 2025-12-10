@@ -17,9 +17,15 @@ const navLinks = document.querySelectorAll('.nav-link');
 const galleryGrid = document.getElementById('galleryGrid');
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightbox-img');
+const lightboxVideo = document.getElementById('lightbox-video');
 const lightboxClose = document.querySelector('.lightbox-close');
 const lightboxPrev = document.querySelector('.lightbox-prev');
 const lightboxNext = document.querySelector('.lightbox-next');
+
+// ===== Helpers =====
+function isVideo(filename) {
+    return /\.(mp4|webm)$/i.test(filename);
+}
 
 // ===== Gallery State =====
 let galleryImages = [];
@@ -354,9 +360,16 @@ function renderGallery(data) {
         <div class="gallery-page">
             ${page.map((img, index) => `
                 <div class="gallery-item fade-in" data-index="${pageIndex * ITEMS_PER_PAGE + index}">
-                    <img src="${img.path}" alt="${img.filename}" loading="lazy">
+                    ${isVideo(img.filename) ? `
+                        <div class="gallery-video-wrapper">
+                            <video src="${img.path}#t=0.5" preload="metadata"></video>
+                            <div class="video-overlay">▶</div>
+                        </div>
+                    ` : `
+                        <img src="${img.path}" alt="${img.filename}" loading="lazy">
+                    `}
                     <div class="gallery-overlay">
-                        <span class="gallery-icon">🔍</span>
+                        <span class="gallery-icon">${isVideo(img.filename) ? '▶' : '🔍'}</span>
                     </div>
                 </div>
             `).join('')}
@@ -501,24 +514,61 @@ navLinks.forEach(link => {
 // ===== Lightbox Functions =====
 function openLightbox(index) {
     currentImageIndex = index;
-    lightboxImg.src = galleryImages[index];
+    const path = galleryImages[index];
+    const filename = path.split('/').pop().split('?')[0];
+
+    // Reset both
+    lightboxImg.style.display = 'none';
+    lightboxVideo.style.display = 'none';
+    lightboxVideo.pause();
+
+    if (isVideo(filename)) {
+        lightboxVideo.src = path;
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.play().catch(e => console.log('Autoplay failed:', e));
+    } else {
+        lightboxImg.src = path;
+        lightboxImg.style.display = 'block';
+    }
+
     lightbox.classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
 function closeLightbox() {
     lightbox.classList.remove('active');
+    lightboxVideo.pause();
+    lightboxVideo.src = ""; // Stop buffering
     document.body.style.overflow = '';
+}
+
+function updateLightboxContent() {
+    const path = galleryImages[currentImageIndex];
+    const filename = path.split('/').pop().split('?')[0];
+
+    lightboxVideo.pause(); // Pause previous if was video
+
+    lightboxImg.style.display = 'none';
+    lightboxVideo.style.display = 'none';
+
+    if (isVideo(filename)) {
+        lightboxVideo.src = path;
+        lightboxVideo.style.display = 'block';
+        lightboxVideo.play().catch(e => console.log('Autoplay failed:', e));
+    } else {
+        lightboxImg.src = path;
+        lightboxImg.style.display = 'block';
+    }
 }
 
 function showPrevImage() {
     currentImageIndex = (currentImageIndex - 1 + galleryImages.length) % galleryImages.length;
-    lightboxImg.src = galleryImages[currentImageIndex];
+    updateLightboxContent();
 }
 
 function showNextImage() {
     currentImageIndex = (currentImageIndex + 1) % galleryImages.length;
-    lightboxImg.src = galleryImages[currentImageIndex];
+    updateLightboxContent();
 }
 
 lightboxClose.addEventListener('click', closeLightbox);
