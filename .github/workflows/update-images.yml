@@ -1,0 +1,56 @@
+name: Update Images List
+
+on:
+  push:
+    paths:
+      - 'images/**'
+
+jobs:
+  update-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate images.json
+        run: |
+          echo "{" > images.json
+          
+          # Gallery
+          echo -n '  "gallery": [' >> images.json
+          files=$(ls -1 images/gallery/*.{jpg,jpeg,png,gif,webp} 2>/dev/null | xargs -I {} basename {} | sort -t. -k1 -rn | tr '\n' ',' | sed 's/,$//')
+          echo "$files" | sed 's/\([^,]*\)/"\1"/g' >> images.json
+          echo '],' >> images.json
+          
+          # People
+          echo -n '  "people": [' >> images.json
+          files=$(ls -1 images/people/*.{jpg,jpeg,png,gif,webp} 2>/dev/null | xargs -I {} basename {} | sort | tr '\n' ',' | sed 's/,$//')
+          echo "$files" | sed 's/\([^,]*\)/"\1"/g' >> images.json
+          echo '],' >> images.json
+          
+          # Main
+          echo -n '  "main": [' >> images.json
+          files=$(ls -1 images/main/*.{jpg,jpeg,png,gif,webp} 2>/dev/null | xargs -I {} basename {} | sort | tr '\n' ',' | sed 's/,$//')
+          echo "$files" | sed 's/\([^,]*\)/"\1"/g' >> images.json
+          echo '],' >> images.json
+          
+          # Popup
+          echo -n '  "popup": [' >> images.json
+          files=$(ls -1 images/popup/*.{jpg,jpeg,png,gif,webp} 2>/dev/null | xargs -I {} basename {} | sort | tr '\n' ',' | sed 's/,$//')
+          echo "$files" | sed 's/\([^,]*\)/"\1"/g' >> images.json
+          echo ']' >> images.json
+          
+          echo "}" >> images.json
+          
+          cat images.json
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add images.json
+          git diff --staged --quiet || git commit -m "chore: Auto-update images.json"
+          git push
