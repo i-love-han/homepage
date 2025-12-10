@@ -29,6 +29,7 @@ let currentImageIndex = 0;
 let currentSlide = 0;
 const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
+let galleryScrollTime = 3000; // default 3 seconds
 
 // ===== Content Fetch Helper =====
 async function fetchContent(path) {
@@ -92,6 +93,9 @@ async function loadContent() {
         // Gallery
         setText('galleryLabel', data['갤러리 라벨']);
         setText('galleryTitle', data['갤러리 제목']);
+        if (data['갤러리 스크롤시간']) {
+            galleryScrollTime = parseInt(data['갤러리 스크롤시간']) * 1000;
+        }
 
         // Contact
         setText('contactLabel', data['연락처 라벨']);
@@ -273,6 +277,8 @@ function renderGallery(data) {
 }
 
 // ===== Gallery Slider Functions =====
+let autoSlideInterval = null;
+
 function initGallerySlider(totalImages) {
     totalSlides = Math.ceil(totalImages / ITEMS_PER_PAGE);
     currentSlide = 0;
@@ -286,6 +292,7 @@ function initGallerySlider(totalImages) {
         dotsContainer.querySelectorAll('.gallery-dot').forEach(dot => {
             dot.addEventListener('click', () => {
                 goToSlide(parseInt(dot.dataset.slide));
+                resetAutoSlide();
             });
         });
     }
@@ -303,17 +310,43 @@ function initGallerySlider(totalImages) {
         newPrev.addEventListener('click', () => {
             if (currentSlide > 0) {
                 goToSlide(currentSlide - 1);
+            } else {
+                goToSlide(totalSlides - 1);
             }
+            resetAutoSlide();
         });
 
         newNext.addEventListener('click', () => {
             if (currentSlide < totalSlides - 1) {
                 goToSlide(currentSlide + 1);
+            } else {
+                goToSlide(0);
             }
+            resetAutoSlide();
         });
     }
 
     updateSlider();
+    startAutoSlide();
+}
+
+function startAutoSlide() {
+    if (totalSlides <= 1) return;
+
+    autoSlideInterval = setInterval(() => {
+        if (currentSlide < totalSlides - 1) {
+            goToSlide(currentSlide + 1);
+        } else {
+            goToSlide(0);
+        }
+    }, galleryScrollTime);
+}
+
+function resetAutoSlide() {
+    if (autoSlideInterval) {
+        clearInterval(autoSlideInterval);
+    }
+    startAutoSlide();
 }
 
 function goToSlide(slideIndex) {
