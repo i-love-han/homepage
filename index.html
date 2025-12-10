@@ -151,9 +151,14 @@
     <div id="popupModal" class="popup-modal">
         <div class="popup-content">
             <button class="popup-close" id="popupClose">&times;</button>
-            <div class="popup-image-container" id="popupImageContainer">
-                <!-- 팝업 이미지가 여기에 표시됩니다 -->
+            <div class="popup-slider">
+                <button class="popup-nav popup-prev" id="popupPrev">&#10094;</button>
+                <div class="popup-image-container" id="popupImageContainer">
+                    <!-- 팝업 이미지가 여기에 표시됩니다 -->
+                </div>
+                <button class="popup-nav popup-next" id="popupNext">&#10095;</button>
             </div>
+            <div class="popup-dots" id="popupDots"></div>
             <div class="popup-footer">
                 <label class="popup-checkbox">
                     <input type="checkbox" id="popupDontShow">

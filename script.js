@@ -197,23 +197,98 @@ function loadPeopleImages() {
 }
 
 // ===== Popup Functions =====
+let currentPopupSlide = 0;
+let popupImages = [];
+
 function checkAndShowPopup() {
+    popupImages = IMAGE_FILES.popup || [];
+    if (popupImages.length === 0) return;
+
+    // Create hash of popup files to detect changes
+    const popupHash = popupImages.join(',');
+    const savedHash = localStorage.getItem('popupImageHash');
     const dontShowUntil = localStorage.getItem('popupDontShowUntil');
-    if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
+
+    // If images changed, reset the "don't show" setting
+    if (popupHash !== savedHash) {
+        localStorage.removeItem('popupDontShowUntil');
+        localStorage.setItem('popupImageHash', popupHash);
+    } else if (dontShowUntil && new Date().getTime() < parseInt(dontShowUntil)) {
         return;
     }
 
-    const files = IMAGE_FILES.popup || [];
-    if (files.length === 0) return;
-
     const container = document.getElementById('popupImageContainer');
-    container.innerHTML = files.map(file =>
-        `<img src="${getImagePath('popup', file)}" alt="${file}">`
+    container.innerHTML = popupImages.map((file, index) =>
+        `<img src="${getImagePath('popup', file)}" alt="${file}" class="${index === 0 ? 'active' : ''}">`
     ).join('');
+
+    // Create dots
+    const dotsContainer = document.getElementById('popupDots');
+    if (popupImages.length > 1) {
+        dotsContainer.innerHTML = popupImages.map((_, index) =>
+            `<span class="popup-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></span>`
+        ).join('');
+
+        dotsContainer.querySelectorAll('.popup-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                goToPopupSlide(parseInt(dot.dataset.index));
+            });
+        });
+    } else {
+        dotsContainer.innerHTML = '';
+    }
+
+    currentPopupSlide = 0;
+    updatePopupNav();
 
     document.getElementById('popupModal').classList.add('active');
     document.body.style.overflow = 'hidden';
 }
+
+function goToPopupSlide(index) {
+    const container = document.getElementById('popupImageContainer');
+    const images = container.querySelectorAll('img');
+    const dots = document.querySelectorAll('.popup-dot');
+
+    images.forEach((img, i) => {
+        img.classList.toggle('active', i === index);
+    });
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === index);
+    });
+
+    currentPopupSlide = index;
+    updatePopupNav();
+}
+
+function updatePopupNav() {
+    const prevBtn = document.getElementById('popupPrev');
+    const nextBtn = document.getElementById('popupNext');
+
+    if (popupImages.length <= 1) {
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+    } else {
+        prevBtn.style.display = 'flex';
+        nextBtn.style.display = 'flex';
+    }
+}
+
+document.getElementById('popupPrev').addEventListener('click', () => {
+    if (currentPopupSlide > 0) {
+        goToPopupSlide(currentPopupSlide - 1);
+    } else {
+        goToPopupSlide(popupImages.length - 1);
+    }
+});
+
+document.getElementById('popupNext').addEventListener('click', () => {
+    if (currentPopupSlide < popupImages.length - 1) {
+        goToPopupSlide(currentPopupSlide + 1);
+    } else {
+        goToPopupSlide(0);
+    }
+});
 
 function closePopup() {
     const dontShow = document.getElementById('popupDontShow').checked;
