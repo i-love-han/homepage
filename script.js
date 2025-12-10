@@ -74,6 +74,12 @@ async function loadContent() {
         }
         setText('headerTitle', data['헤더 제목']);
 
+        // Navigation Labels
+        setText('navHome', data['홈 라벨']);
+        setText('navAbout', data['소개 라벨']);
+        setText('navGallery', data['갤러리 라벨']);
+        setText('navContact', data['연락처 라벨']);
+
         // Main
         setText('mainTitle', data['메인 제목']);
 
