@@ -34,7 +34,7 @@ let currentImageIndex = 0;
 let currentSlide = 0;
 const ITEMS_PER_PAGE = 6;
 let totalSlides = 0;
-let galleryScrollTime = 3000;
+let galleryScrollTime = 3000; // default 3 seconds
 async function fetchContent(path) {
 const response = await fetch(`${path}?t=${CACHE_BUSTER}`);
 if (!response.ok) throw new Error(`Failed to fetch ${path}`);
@@ -144,7 +144,7 @@ if (locationElem && location) {
 const item = locationElem.closest('.contact-item');
 if (item) {
 item.onclick = () => {
-const mapUrl = `https:
+const mapUrl = `https://map.kakao.com/link/search/${encodeURIComponent(location)}`;
 window.open(mapUrl, '_blank');
 };
 }
@@ -370,7 +370,7 @@ updateSlider();
 function updateSlider() {
 const viewport = document.querySelector('.gallery-viewport');
 const viewportWidth = viewport?.offsetWidth || 0;
-const gap = 20;
+const gap = 20; // Needs to match CSS
 const offset = currentSlide * (viewportWidth + gap);
 galleryGrid.style.transform = `translateX(-${offset}px)`;
 const dots = document.querySelectorAll('.gallery-dot');
@@ -428,13 +428,13 @@ document.body.style.overflow = 'hidden';
 function closeLightbox() {
 lightbox.classList.remove('active');
 lightboxVideo.pause();
-lightboxVideo.src = "";
+lightboxVideo.src = ""; // Stop buffering
 document.body.style.overflow = '';
 }
 function updateLightboxContent() {
 const path = galleryImages[currentImageIndex];
 const filename = path.split('/').pop().split('?')[0];
-lightboxVideo.pause();
+lightboxVideo.pause(); // Pause previous if was video
 lightboxImg.style.display = 'none';
 lightboxVideo.style.display = 'none';
 if (isVideo(filename)) {
