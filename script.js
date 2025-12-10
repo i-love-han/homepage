@@ -85,10 +85,16 @@ async function loadContent() {
         }
 
         // About
+        setText('aboutLabel', data['소개 라벨']);
         setText('aboutTitle', data['소개 제목']);
         setText('aboutContent', data['소개 내용']);
 
+        // Gallery
+        setText('galleryLabel', data['갤러리 라벨']);
+        setText('galleryTitle', data['갤러리 제목']);
+
         // Contact
+        setText('contactLabel', data['연락처 라벨']);
         setText('contactTitle', data['연락처 제목']);
         setText('contactEmail', data['연락처 이메일']);
         setText('contactPhone', data['연락처 전화']);
@@ -96,9 +102,6 @@ async function loadContent() {
 
         // Apply Links
         applyContactLinks(data);
-
-        // Gallery
-        setText('galleryTitle', data['갤러리 제목']);
 
         // Footer
         setText('footerText', data['푸터 내용']);
